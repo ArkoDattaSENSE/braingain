@@ -1,23 +1,19 @@
 # BrainGain
 
-A dark, mobile-first recommendation feed. The static frontend lives in this repository and is served by GitHub Pages. The existing private Google Sheet is the source of truth; its bound Apps Script project serves the JSON API.
+Open the GitHub Pages address to enter BrainGain. The public page redirects to the Google Apps Script web app. Google asks for sign-in when needed and normally retains the Google session. The recommendation UI runs inside Apps Script, where `google.script.run` reads and updates the existing private Sheet.
+
+## Access and data
+
+The web app is deployed as **User accessing the web app** with access set to **Anyone with Google account**. A signed-in visitor must authorize the script and have access to the private Sheet to load recommendations or change state. Do not share the Sheet with people who should not see BrainGain. The Sheet ID and Apps Script source stay in the private Sheet-bound project; no credentials, tokens, cookies, or Sheet data belong in this public repository.
+
+The Sheet has `Recommended` and `Watchlist` tabs. Only the `Liked` and `Watched` cells of `Recommended` are changed by the app. Row number and title are checked together before each write to avoid updating the wrong recommendation after a stale page.
 
 ## Features
 
-For You shows unwatched recommendations in newest-first Sheet row order. Liked and Watched have separate tabs; Watchlist comes from the separate Sheet tab. Search and type filters apply within each tab. Cards have Like/Unlike, Watched/Unwatch, details, and YouTube previews. Refresh reloads the Sheet.
+For You hides watched items. All feeds sort by newest Sheet row first. Search and type filters work within For You, Liked, Watched, and Watchlist. Cards provide Like/Unlike, Watched/Unwatch, details, YouTube previews, and refresh.
 
-## Files
+## Deployment
 
-- `index.html`: page structure
-- `style.css`: dark mobile UI
-- `app.js`: rendering and API client; `API_URL` points to the Apps Script web-app `/exec` endpoint
+GitHub Pages uses `main` / `(root)`. `index.html` is the sign-in entry and points to the current Apps Script `/exec` deployment. After changing the Sheet-bound `Code.gs` or `Index.html`, save and deploy a new version in Apps Script. The older `app.js` and `style.css` are retained as a static frontend prototype; the protected web app serves the active UI and styles from Apps Script.
 
-## Apps Script setup
-
-The private Sheet has `Recommended` and `Watchlist` tabs. The `Recommended` tab must include `Title`, `Liked`, and `Watched` headers. Other headers such as Type, Year, Creator / Director, Tags, Why / Note, Based On, Score, Link, Thumbnail, and Platform are passed through. Row numbers are used as item IDs; mutations also verify the title so a stale page cannot silently change a different row.
-
-The Sheet-bound project exposes `doGet(e)`: `action=list` returns JSON containing `recommended`, `watchlist`, and `updatedAt`; `action=like|watched&row=N&value=true|false&title=...` writes only the selected state cell. A validated `callback` wraps responses as JSONP because the static frontend cannot use `google.script.run` or rely on Apps Script CORS headers. The web app executes as the Sheet owner. Redeploy a new version after changing Code.gs. Keep the Sheet ID and Apps Script source in the private project, outside this public repository.
-
-## Publishing
-
-In GitHub Settings → Pages, select Deploy from a branch, `main`, `/(root)`. The site loads the `/exec` URL from `app.js`. A public Pages site needs an Apps Script deployment accessible to its visitors. This endpoint has no user authentication for the two state writes, so anyone with the endpoint URL can change Liked or Watched values. Do not put credentials, tokens, cookies, or private Sheet data in this repository. If private write access is needed, use an authenticated backend rather than a static frontend.
+The earlier cross-origin JSON API could not initiate Google's login flow from GitHub Pages. Serving the content from Apps Script makes the sign-in and Sheet permission check happen before data is available.
